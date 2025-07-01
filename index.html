@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Memotest Mejorado con Puntuaciones</title>
+  <style>
+    /* Fondo con textura y color temático */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+      /* textura ligera (usa filtro CSS para simular grano) */
+      background-repeat: repeat;
+      background-size: cover;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #222;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+      opacity: 0.1;
+      z-index: 0;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      position: relative;
+      z-index: 1;
+      color: #fff;
+      text-shadow: 0 0 8px #222;
+    }
+
+    #stats {
+      margin-bottom: 10px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      color: white;
+      font-weight: 600;
+      text-shadow: 0 0 4px #000;
+    }
+
+    #game {
+      display: grid;
+      grid-template-columns: repeat(6, 160px);
+      gap: 12px;
+      perspective: 1000px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card {
+      width: 160px;
+      height: 160px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      border-radius: 12px;
+      background: white;
+    }
+
+    .card.revealed {
+      transform: rotateY(180deg);
+    }
+
+    .card.matched {
+      pointer-events: none;
+      opacity: 0.4;
+      box-shadow: 0 0 20px 3px #28a745;
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-back, .card-front img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+      user-select: none;
+    }
+
+    .card-back {
+      background-image: url("back.PNG");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .card-front {
+      transform: rotateY(180deg);
+    }
+
+    #restart-btn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 0 10px rgba(0,123,255,0.7);
+      transition: background-color 0.3s;
+    }
+
+    #restart-btn:hover {
+      background-color: #0056b3;
+    }
+
+    /* Modal de victoria con fondo */
+    #win-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85) url("Tralalero.gif") center/cover no-repeat;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    #win-modal .modal-content {
+      background: rgba(0, 0, 0, 0.75);
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      animation: pop 0.5s ease;
+      max-width: 90%;
+      color: white;
+      box-shadow: 0 0 15px #000;
+    }
+
+    #win-modal h2 {
+      margin-top: 0;
+      animation: flash 1s infinite;
+      text-shadow: 0 0 10px #fff, 0 0 20px #28a745;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    #win-modal button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #win-modal button:hover {
+      background-color: #218838;
+    }
+
+    /* Tabla de puntuaciones */
+    #scoreboard {
+      margin-top: 30px;
+      background: rgba(255 255 255 / 0.9);
+      padding: 20px 30px;
+      border-radius: 12px;
+      width: 350px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.15);
+      position: relative;
+      z-index: 1;
+    }
+    #scoreboard h3 {
+      margin-top: 0;
+      text-align: center;
+      color: #007BFF;
+      text-shadow: 0 0 3px #004080;
+    }
+    #scoreboard table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    #scoreboard th, #scoreboard td {
+      padding: 8px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    #scoreboard th {
+      background-color: #007BFF;
+      color: white;
+    }
+    #scoreboard tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Memotest ET24</h1>
+  <div id="stats">
+    ⏱ Tiempo: <span id="timer">0</span> segundos |
+    🎯 Intentos: <span id="attempts">0</span>
+  </div>
+  <div id="game"></div>
+  <button id="restart-btn">🔁 Reiniciar Partida</button>
+
+  <!-- Modal de victoria -->
+  <div id="win-modal">
+    <div class="modal-content">
+      <h2>¡Ganaste! 🎉</h2>
+      <p>Completaste el juego en <strong><span id="final-seconds"></span></strong> segundos y <strong><span id="final-attempts"></span></strong> intentos.</p>
+      <button id="modal-restart">Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <!-- Tabla de puntuaciones -->
+  <div id="scoreboard">
+    <h3>Mejores Resultados</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Tiempo (s)</th>
+          <th>Intentos</th>
+        </tr>
+      </thead>
+      <tbody id="scores-body">
+        <!-- se llena con JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sonidos -->
+  <audio id="sound-correct" src="acierto.mp3"></audio>
+  <audio id="sound-wrong" src="fallo.mp3"></audio>
+  <audio id="sound-win" src="victoria.mp3"></audio>
+
+  <script>
+    const totalPairs = 12;
+    const imageNames = Array.from({ length: totalPairs }, (_, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      return `${num}.PNG`;
+    });
+
+    let images, firstCard, secondCard, lockBoard, matchedPairs, attempts, seconds, timerInterval;
+
+    const game = document.getElementById("game");
+    const timerSpan = document.getElementById("timer");
+    const attemptsSpan = document.getElementById("attempts");
+    const restartBtn = document.getElementById("restart-btn");
+    const soundCorrect = document.getElementById("sound-correct");
+    const soundWrong = document.getElementById("sound-wrong");
+    const soundWin = document.getElementById("sound-win");
+    const winModal = document.getElementById("win-modal");
+    const finalSeconds = document.getElementById("final-seconds");
+    const finalAttempts = document.getElementById("final-attempts");
+    const modalRestart = document.getElementById("modal-restart");
+    const scoresBody = document.getElementById("scores-body");
+
+    // Guarda y carga mejores resultados en localStorage
+    function getScores() {
+      let stored = localStorage.getItem("memotest-scores");
+      return stored ? JSON.parse(stored) : [];
+    }
+
+    function saveScores(scores) {
+      localStorage.setItem("memotest-scores", JSON.stringify(scores));
+    }
+
+    // Actualiza la tabla de puntuaciones
+    function updateScoreboard() {
+      let scores = getScores();
+      scoresBody.innerHTML = "";
+      if (scores.length === 0) {
+        scoresBody.innerHTML = '<tr><td colspan="3">Sin resultados aún</td></tr>';
+        return;
+      }
+      scores.forEach((score, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${i + 1}</td><td>${score.time}</td><td>${score.attempts}</td>`;
+        scoresBody.appendChild(tr);
+      });
+    }
+
+    // Intenta agregar un nuevo resultado si es bueno
+    function tryAddScore(time, attempts) {
+      let scores = getScores();
+      // Insertar y ordenar por tiempo asc y luego intentos asc
+      scores.push({time, attempts});
+      scores.sort((a,b) => a.time - b.time || a.attempts - b.attempts);
+      // Limitar a top 5
+      if (scores.length > 5) scores.length = 5;
+      saveScores(scores);
+      updateScoreboard();
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        seconds++;
+        timerSpan.textContent = seconds;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    function createCard(imageSrc) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.dataset.image = imageSrc;
+
+      const front = document.createElement("div");
+      front.className = "card-face card-front";
+      const img = document.createElement("img");
+      img.src = imageSrc;
+      front.appendChild(img);
+
+      const back = document.createElement("div");
+      back.className = "card-face card-back";
+
+      card.appendChild(front);
+      card.appendChild(back);
+
+      return card;
+    }
+
+    function revealCard(card) {
+      if (lockBoard || card.classList.contains("revealed") || card.classList.contains("matched")) return;
+      card.classList.add("revealed");
+
+      if (!firstCard) {
+        firstCard = card;
+      } else {
+        secondCard = card;
+        lockBoard = true;
+        attempts++;
+        attemptsSpan.textContent = attempts;
+
+        if (firstCard.dataset.image === secondCard.dataset.image) {
+          soundCorrect.play();
+          firstCard.classList.add("matched");
+          secondCard.classList.add("matched");
+          matchedPairs++;
+          if (matchedPairs === totalPairs) {
+            stopTimer();
+            soundWin.play();
+            finalSeconds.textContent = seconds;
+            finalAttempts.textContent = attempts;
+            tryAddScore(seconds, attempts);
+            setTimeout(() => {
+              winModal.style.display = "flex";
+            }, 500);
+          }
+          setTimeout(resetTurn, 800);
+        } else {
+          soundWrong.play();
+          setTimeout(() => {
+            firstCard.classList.remove("revealed");
+            secondCard.classList.remove("revealed");
+            resetTurn();
+          }, 1000);
+        }
+      }
+    }
+
+    function resetTurn() {
+      [firstCard, secondCard] = [null, null];
+      lockBoard = false;
+    }
+
+    function resetGame() {
+      stopTimer();
+      timerSpan.textContent = "0";
+      attemptsSpan.textContent = "0";
+      game.innerHTML = "";
+      winModal.style.display = "none";
+      firstCard = null;
+      secondCard = null;
+      lockBoard = true;
+      matchedPairs = 0;
+      attempts = 0;
+      seconds = 0;
+
+      images = [...imageNames, ...imageNames];
+      images.sort(() => 0.5 - Math.random());
+
+      images.forEach(imgName => {
+        const card = createCard(imgName);
+        game.appendChild(card);
+        card.addEventListener("click", () => revealCard(card));
+        card.classList.add("revealed"); // mostrar todas al inicio
+      });
+
+      setTimeout(() => {
+        document.querySelectorAll(".card").forEach(card => {
+          card.classList.remove("revealed");
+        });
+        lockBoard = false;
+        startTimer();
+      }, 5000);
+    }
+
+    restartBtn.addEventListener("click", resetGame);
+    modalRestart.addEventListener("click", resetGame);
+
+    updateScoreboard();
+    resetGame();
+  </script>
+</body>
+</html>
