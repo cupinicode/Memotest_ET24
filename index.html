@@ -96,7 +96,7 @@
     }
 
     .card-back {
-      background-image: url("back.PNG");
+      background-image: url("./back.PNG");
       background-size: cover;
       background-position: center;
     }
@@ -260,7 +260,7 @@
     const totalPairs = 12;
     const imageNames = Array.from({ length: totalPairs }, (_, i) => {
       const num = String(i + 1).padStart(2, '0');
-      return `${num}.PNG`;
+      return `./${num}.PNG`;
     });
 
     let images, firstCard, secondCard, lockBoard, matchedPairs, attempts, seconds, timerInterval;
